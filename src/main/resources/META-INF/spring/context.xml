@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:batch="http://www.springframework.org/schema/batch"
+	xmlns:jdbc="http://www.springframework.org/schema/jdbc"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/batch http://www.springframework.org/schema/batch/spring-batch.xsd
+		http://www.springframework.org/schema/jdbc http://www.springframework.org/schema/jdbc/spring-jdbc-4.2.xsd
+		http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.2.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+	<import resource="job.xml"/>
+
+    <!-- Set up or detect a System property called "ENVIRONMENT" used to construct a properties file on the classpath.  The default is "hsql".  -->
+	<!-- <bean id="environment"
+		class="org.springframework.batch.support.SystemPropertyInitializer">
+		<property name="defaultValue" value="h2"/>
+		<property name="keyName" value="ENVIRONMENT"/>
+	</bean> -->
+	
+	<!-- Properties -->
+	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="locations">
+			<list>
+				<value>classpath:META-INF/properties/env.properties</value>
+				<value>classpath:META-INF/properties/batch-h2.properties</value>
+			</list>
+		</property>
+	</bean>
+	
+	<bean id="dataSource" class="org.apache.commons.dbcp2.BasicDataSource">
+		<property name="driverClassName" value="${batch.jdbc.driver}"/>
+		<property name="url" value="${batch.jdbc.url}"/>
+		<property name="username" value="${batch.jdbc.user}"/>
+		<property name="password" value="${batch.jdbc.password}"/>
+		<property name="initialSize" value="${batch.jdbc.initialize}"/>
+	</bean>
+
+	<bean id="transactionManager" class="org.springframework.batch.support.transaction.ResourcelessTransactionManager"/>
+	
+	<!-- Initialise the database before every test case: -->
+	<!-- 
+    <jdbc:initialize-database data-source="dataSource">
+        <jdbc:script location="${batch.drop.script}"/>
+        <jdbc:script location="${batch.schema.script}"/>
+        <jdbc:script location="${batch.business.schema.script}"/>
+    </jdbc:initialize-database>
+     -->
+	
+	<!-- JobRepository -->
+	<bean id="jobRepository" class="org.springframework.batch.core.repository.support.MapJobRepositoryFactoryBean">
+		<property name="transactionManager" ref="transactionManager"/>
+	</bean>
+	
+	
+	<!-- JobLauncher -->
+	<bean id="jobLauncher" class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
+        <property name="jobRepository" ref="jobRepository"/>
+    </bean>
+	
+	<!--  Use this to set additional properties on beans at run time -->
+	<!-- 
+	<bean id="overrideProperties" class="org.springframework.beans.factory.config.PropertyOverrideConfigurer"
+		depends-on="environment">
+		<property name="location" value="classpath:batch-${ENVIRONMENT}.properties" />
+		Allow system properties (-D) to override those from file
+		<property name="localOverride" value="true" />
+		<property name="properties">
+			<bean class="java.lang.System" factory-method="getProperties" />
+		</property>
+		<property name="ignoreInvalidKeys" value="true" />
+		<property name="order" value="2" />
+	</bean>
+	
+	<bean id="sequenceIncrementerParent" class="${batch.database.incrementer.class}" abstract="true">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+
+	<bean id="columnIncrementerParent" class="${batch.database.incrementer.class}" abstract="true" parent="sequenceIncrementerParent">
+		<property name="columnName" value="ID" />
+	</bean>
+
+	<bean id="incrementerParent" parent="${batch.database.incrementer.parent}">
+		<property name="incrementerName" value="DUMMY"/>
+	</bean>
+
+	<bean id="lobHandler" class="${batch.lob.handler.class}"/>
+	 -->
+</beans>
